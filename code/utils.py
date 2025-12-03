@@ -26,7 +26,7 @@ def truncate_normal_distribution(min: int = -1,
     return truncnorm((min - mean) / std_dev, (max - mean) / std_dev, loc=mean, scale=std_dev)
 
 
-def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
+def generate_synthetic_lesions(
                                base_radiomic_data: pd.DataFrame,
                                expected_num_lesions: int = 10,
                                patient_id: int | str = 0,
@@ -49,15 +49,28 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
             * original_shape_Maximum3DDiameter
             * original_shape_MajorAxisLength
             * original_shape_MinorAxisLength
-    mu: int
-        Expected number of events
+    expected_num_lesions: int
+        Expected number of lesions to use for poisson distribution
+    patient_id: int | str
+        Patient ID to label all these lesions with
+    location_label: str
+        Name of tumour location label in the 
     """
+    if location_label not in base_radiomic_data.columns:
+        raise ValueError(f"{location_label} is not a column name in the provided radiomic data.")
+
     # Generate random number of lesions with poisson distribution
     rng = np.random.default_rng(random_seed)
     n_lesions = 0
     # Select a number of lesions until the value is between 1 and 30
     while n_lesions < 1 or n_lesions > 30:
         n_lesions = rng.poisson(expected_num_lesions)
+
+    # Generated truncated normal distribution setup - used for diameter change
+    diameter_change_dist = truncate_normal_distribution(min=-1,
+                                                        max=3,
+                                                        mean=0,
+                                                        std_dev=0.3)
 
     # Initialize list to hold lesion data
     lesion_data = {}
@@ -86,7 +99,7 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
         diameter_minor_ax = base_radiomic_data['original_shape_MinorAxisLength'][ind]
 
         # Append metadata for this lesion to main list
-        lesion_data[lesion_idx] = {'patient_id': patient_id,
+        lesion_data[lesion_idx] = {'patient_id': str(patient_id),
                                    'lesion_idx': lesion_idx,
                                    'diameter_pre': diameter_pre,
                                    'diameter_change': diameter_change,
@@ -101,5 +114,28 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
     # Convert to DataFrame
     synthetic_lesions = pd.DataFrame.from_dict(lesion_data, orient='index')
     
-    
     return synthetic_lesions
+
+
+
+def generate_synthetic_patients(num_sim_patients: int, 
+                                base_radiomic_data: pd.DataFrame,
+                                expected_num_lesions: int = 10,
+                                location_label: str = "LABEL",
+                                random_seed: int | None = None,
+                                ) -> pd.DataFrame:
+    """Generate synthetic patient lesion data from an existing dataset"""
+    synth_lesion_list = [
+        generate_synthetic_lesions(
+            base_radiomic_data=base_radiomic_data,
+            expected_num_lesions=expected_num_lesions,
+            patient_id=pat_idx,
+            location_label=location_label,
+            random_seed=random_seed
+        )
+        for pat_idx in range(num_sim_patients)
+    ]
+
+    synth_lesion_pd = pd.concat(synth_lesion_list, ignore_index=True)
+
+    return synth_lesion_pd

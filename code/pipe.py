@@ -1,9 +1,8 @@
+import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+
 from utils import (
-    generate_synthetic_lesions,
-    truncate_normal_distribution,
-    
+    generate_synthetic_patients,
 )
 
 
@@ -11,8 +10,6 @@ def pipe(radiomic_features_filepath: str,
          num_sim_patients: int = 10000,
          expected_num_lesions: int = 10,
          location_label: str = "LABEL",
-         parallel: bool = False,
-         n_jobs: int = -1,
          random_seed: int | None = None
          ):
     # Load radiomics data
@@ -24,44 +21,21 @@ def pipe(radiomic_features_filepath: str,
     # Calculate the true volume of the segmentation
     rad_data['volume_cc_contoured'] = rad_data['original_shape_VoxelVolume'] * rad_data['slice_thickness'] / 1000
 
-    # Truncated normal distribution setup - used for diameter change
-    trunc_normal_dist = truncate_normal_distribution(min=-1,
-                                                     max=3,
-                                                     mean=0,
-                                                     std_dev=0.3)
+    synth_lesions = generate_synthetic_patients(num_sim_patients=num_sim_patients,
+                                                base_radiomic_data=rad_data,
+                                                expected_num_lesions=expected_num_lesions,
+                                                location_label=location_label,
+                                                random_seed=random_seed)
     
-    if parallel:
-        synthetic_lesions = Parallel(n_jobs=n_jobs)(
-            delayed(generate_synthetic_lesions)(
-                diameter_change_dist=trunc_normal_dist,
-                base_radiomic_data=rad_data,
-                expected_num_lesions=expected_num_lesions,
-                patient_id=pat_idx,
-                location_label=location_label,
-                random_seed=random_seed
-            )
-            for pat_idx in range(num_sim_patients)
-        )
-    else:
-        synthetic_lesions = [
-            generate_synthetic_lesions(
-                diameter_change_dist=trunc_normal_dist,
-                base_radiomic_data=rad_data,
-                expected_num_lesions=expected_num_lesions,
-                patient_id=pat_idx,
-                location_label=location_label,
-                random_seed=random_seed
-            )
-            for pat_idx in range(num_sim_patients)
-        ]
-    
-    print(synthetic_lesions)
+    patient_ids, lesion_counts = np.unique(synth_lesions['patient_id'], return_counts=True)
 
+    print(patient_ids, lesion_counts)
+    
     return None
 
 
 if __name__ == '__main__':
     pipe("data/rawdata/SARC021/SARC021_radiomics.csv",
-         num_sim_patients = 1,
+         num_sim_patients = 2,
          expected_num_lesions = 3,
          random_seed=10)
