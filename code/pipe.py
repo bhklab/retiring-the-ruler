@@ -7,7 +7,8 @@ from recist import recist_assess, select_target_lesions, recist_metrics_by_targe
 from plot import (
     plot_recist_accuracy, 
     plot_pd_sensitivity,
-    plot_acc_and_sens
+    plot_acc_and_sens,
+    plot_vol_vs_diameter
 )
 
 
@@ -34,7 +35,6 @@ def pipe(radiomic_features_filepath: str,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
                                                 random_seed=random_seed)
-    # patient_ids, lesion_counts = np.unique(synth_lesions['patient_id'], return_counts=True)
 
     # Assess the RECIST response category of each synthetic patient using all lesions
     synth_response = recist_assess(synth_lesions)
@@ -49,8 +49,6 @@ def pipe(radiomic_features_filepath: str,
         select_target_response = recist_assess(target_lesions)
         # Add RECIST category for this number of target lesions
         synth_response[f"RECIST ({num_targets} targets)"] = select_target_response['RECIST (all)']
-
-    
 
     if save_out:
         out_path = dirs.PROCDATA / dataset_name / f"sim_{num_sim_patients}_pats"
@@ -69,8 +67,9 @@ def pipe(radiomic_features_filepath: str,
     acc_plot = plot_recist_accuracy(recist_accuracy, plot_path)
     pd_sense_plot = plot_pd_sensitivity(pd_sensitivity, plot_path)
     acc_sense_plot = plot_acc_and_sens(recist_accuracy, pd_sensitivity, plot_path)
+    vol_v_diam_plot, vol_var_v_diam_plot = plot_vol_vs_diameter(synth_lesions, plot_path)
     
-    return None
+    return
 
 
 if __name__ == '__main__':
