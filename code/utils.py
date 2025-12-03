@@ -54,7 +54,10 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
     """
     # Generate random number of lesions with poisson distribution
     rng = np.random.default_rng(random_seed)
-    n_lesions = rng.poisson(expected_num_lesions)
+    n_lesions = 0
+    # Select a number of lesions until the value is between 1 and 30
+    while n_lesions < 1 or n_lesions > 30:
+        n_lesions = rng.poisson(expected_num_lesions)
 
     # Initialize list to hold lesion data
     lesion_data = {}
@@ -83,7 +86,9 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
         diameter_minor_ax = base_radiomic_data['original_shape_MinorAxisLength'][ind]
 
         # Append metadata for this lesion to main list
-        lesion_data[lesion_idx] = {'diameter_pre': diameter_pre,
+        lesion_data[lesion_idx] = {'patient_id': patient_id,
+                                   'lesion_idx': lesion_idx,
+                                   'diameter_pre': diameter_pre,
                                    'diameter_change': diameter_change,
                                    'diameter_post': diameter_post,
                                    'location': location,
