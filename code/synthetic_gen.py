@@ -25,8 +25,12 @@ def truncate_normal_distribution(min: int = -1,
     return truncnorm((min - mean) / std_dev, (max - mean) / std_dev, loc=mean, scale=std_dev)
 
 
-def generate_synthetic_lesions(
-                               base_radiomic_data: pd.DataFrame,
+def volume_calc(diameter):
+    """Calculate volume of lesion based on the diameter and assumption it is a sphere"""
+    return (4/3 * np.pi * (diameter/2)**3) / 1000
+
+
+def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
                                expected_num_lesions: int = 10,
                                patient_id: int | str = 0,
                                location_label: str = "LABEL",
@@ -37,9 +41,6 @@ def generate_synthetic_lesions(
     
     Parameters
     ----------
-    diameter_change_dist: rv_continuous
-        A truncated normal distribution to generate the diameter change for the simulated lesion from.
-        Can be made by running `truncate_normal_distribution` function.
     base_radiomic_data: pd.DataFrame
         Ground truth radiomic data to base simulations on. Must contain the following columns:
             * original_shape_Maximum2DDiameterSlice
@@ -106,12 +107,19 @@ def generate_synthetic_lesions(
                                    'location': location,
                                    'volume_cc_contoured': volume,
                                    'diameter_3D_max': diameter_3D_max,
-                                   'diameter_3D_max': diameter_major_ax,
+                                   'diameter_major_ax': diameter_major_ax,
                                    'diameter_minor_ax': diameter_minor_ax}
         
     
     # Convert to DataFrame
     synthetic_lesions = pd.DataFrame.from_dict(lesion_data, orient='index')
+
+    # Add volumes
+    synthetic_lesions['volume_cc_pre'] = volume_calc(synthetic_lesions['diameter_pre'])
+    synthetic_lesions['volume_cc_post'] = volume_calc(synthetic_lesions['diameter_post'])
+    synthetic_lesions['volume_cc_3Dmax'] = volume_calc(synthetic_lesions['diameter_3D_max'])
+    synthetic_lesions['volume_cc_majorAx'] = volume_calc(synthetic_lesions['diameter_major_ax'])
+    synthetic_lesions['volume_cc_minorAx'] = volume_calc(synthetic_lesions['diameter_minor_ax'])
     
     return synthetic_lesions
 
