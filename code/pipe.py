@@ -77,4 +77,4 @@ if __name__ == '__main__':
          num_sim_patients = 100,
          expected_num_lesions = 10,
          save_out=True,
-         random_seed=None)
+         random_seed=165)
