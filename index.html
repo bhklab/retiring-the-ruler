@@ -51,6 +51,14 @@
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#algorithm">Algorithm</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#synthetic-lesion-generation">SYNTHETIC LESION GENERATION</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lesion-selection-bias-assessment">LESION SELECTION BIAS ASSESSMENT</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#diameter-versus-volume-assessment">DIAMETER VERSUS VOLUME ASSESSMENT</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a>
     </li>
@@ -119,21 +127,27 @@ If you haven't installed it yet, <a href="https://pixi.sh/latest/">follow these 
 <pre><code class="language-bash">pixi install
 </code></pre>
 <h2 id="algorithm">Algorithm</h2>
-<p>Algorithm:
-1. Artificially generate a dataset of N patients (input arg: N).
-2. For each patient, generate a random number of lesions (range: 1-30, poisson distribution with µ = 5).
-3. For each lesion, generate a random diameter (select from a list of possible diameters, with replacement (using original_shape_Maximum2DDiameterSlice)).
-4. For each lesion, generate a diameter change (select from a Gaussian distribution, with fractional changes from -1 to 1).
-5. For each lesion, assign a location tag (e.g. liver, lung, bone, brain, again from a list of possible locations, with replacement).</p>
-<p>----- LESION SELECTION BIAS ASSESSMENT -----
-6. For each patient, select a random number of lesions to be target lesions (up to 5 per patient, with a maximum of 2 per assigned location).
-7. From the selected target lesions, assess the RECIST response (SLD = 100% decrease = CR, SLD &gt; 30% decrease = PR, SLD &gt; 20% increase = PD, otherwise SD).
-8. For each patient, assess the RECIST response across all lesions (as above).
-9. Compare the RECIST response across all lesions to the RECIST response across target lesions only.</p>
-<p>----- DIAMETER VERSUS VOLUME ASSESSMENT -----
-10. For each diameter, calculate the corresponding volume (assuming spherical shape; this will represent the lower end of volumetric measurement).
-11. Inject inter-observer variability by adding a random error to the volume calculation (select from a Gaussian distribution, with fractional diameter changes from -0.113 to 0.113; REF: https://pmc.ncbi.nlm.nih.gov/articles/PMC3423763/).
-12. For each lesion, calculate the volume using another diameter measurement (i.e., original_shape_Maximum3DDiameter).</p>
+<h3 id="synthetic-lesion-generation">SYNTHETIC LESION GENERATION</h3>
+<ol>
+<li>Artificially generate a dataset of N patients (input arg: N).</li>
+<li>For each patient, generate a random number of lesions (range: 1-30, poisson distribution with µ = 5).</li>
+<li>For each lesion, generate a random diameter (select from a list of possible diameters, with replacement (using original_shape_Maximum2DDiameterSlice)).</li>
+<li>For each lesion, generate a diameter change (select from a Gaussian distribution, with fractional changes from -1 to 1).</li>
+<li>For each lesion, assign a location tag (e.g. liver, lung, bone, brain, again from a list of possible locations, with replacement).</li>
+</ol>
+<h3 id="lesion-selection-bias-assessment">LESION SELECTION BIAS ASSESSMENT</h3>
+<ol>
+<li>For each patient, select a random number of lesions to be target lesions (up to 5 per patient, with a maximum of 2 per assigned location).</li>
+<li>From the selected target lesions, assess the RECIST response (SLD = 100% decrease = CR, SLD &gt; 30% decrease = PR, SLD &gt; 20% increase = PD, otherwise SD).</li>
+<li>For each patient, assess the RECIST response across all lesions (as above).</li>
+<li>Compare the RECIST response across all lesions to the RECIST response across target lesions only.</li>
+</ol>
+<h3 id="diameter-versus-volume-assessment">DIAMETER VERSUS VOLUME ASSESSMENT</h3>
+<ol>
+<li>For each diameter, calculate the corresponding volume (assuming spherical shape; this will represent the lower end of volumetric measurement).</li>
+<li>Inject inter-observer variability by adding a random error to the volume calculation (select from a Gaussian distribution, with fractional diameter changes from -0.113 to 0.113; REF: https://pmc.ncbi.nlm.nih.gov/articles/PMC3423763/).</li>
+<li>For each lesion, calculate the volume using another diameter measurement (i.e., original_shape_Maximum3DDiameter).</li>
+</ol>
 <h2 id="documentation">Documentation</h2>
 <p>Click <a href="https://bhklab.github.io/retiring-the-ruler">here</a> to view the full documentation.</p>
               
@@ -188,5 +202,5 @@ If you haven't installed it yet, <a href="https://pixi.sh/latest/">follow these 
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-12-03 21:15:26.829835+00:00
+Build Date UTC : 2025-12-03 21:16:43.199216+00:00
 -->
