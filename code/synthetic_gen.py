@@ -34,7 +34,7 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
                                expected_num_lesions: int = 10,
                                patient_id: int | str = 0,
                                location_label: str = "LABEL",
-                               random_seed: int | None = None,
+                               lesion_selection_rng: int | None = None,
                                ) -> pd.DataFrame:
     """
     Generate synthetic lesion measurement data. 
@@ -60,11 +60,11 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
         raise ValueError(f"{location_label} is not a column name in the provided radiomic data.")
 
     # Generate random number of lesions with poisson distribution
-    rng = np.random.default_rng(random_seed)
+    rng_poisson = np.random.default_rng()
     n_lesions = 0
     # Select a number of lesions until the value is between 1 and 30
     while n_lesions < 1 or n_lesions > 30:
-        n_lesions = rng.poisson(expected_num_lesions)
+        n_lesions = rng_poisson.poisson(expected_num_lesions)
 
     # Generated truncated normal distribution setup - used for diameter change
     diameter_change_dist = truncate_normal_distribution(min=-1,
@@ -74,16 +74,16 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
 
     # Initialize list to hold lesion data
     lesion_data = {}
-
+    
     for lesion_idx in range(n_lesions):
         # Select a random index
-        ind = rng.choice(base_radiomic_data.index)
+        ind = lesion_selection_rng.choice(base_radiomic_data.index)
 
         # Generate diameter (pre-treatment)
         diameter_pre = base_radiomic_data['original_shape_Maximum2DDiameterSlice'][ind]
 
         # Generate diameter change
-        diameter_change = diameter_change_dist.rvs(size=1, random_state=random_seed)[0]
+        diameter_change = diameter_change_dist.rvs(size=1)[0]
 
         # Generate diameter (post-treatment)
         diameter_post = diameter_pre + diameter_pre * diameter_change
@@ -113,13 +113,6 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
     
     # Convert to DataFrame
     synthetic_lesions = pd.DataFrame.from_dict(lesion_data, orient='index')
-
-    # Add volumes
-    synthetic_lesions['volume_cc_pre'] = volume_calc(synthetic_lesions['diameter_pre'])
-    synthetic_lesions['volume_cc_post'] = volume_calc(synthetic_lesions['diameter_post'])
-    synthetic_lesions['volume_cc_3Dmax'] = volume_calc(synthetic_lesions['diameter_3D_max'])
-    synthetic_lesions['volume_cc_majorAx'] = volume_calc(synthetic_lesions['diameter_major_ax'])
-    synthetic_lesions['volume_cc_minorAx'] = volume_calc(synthetic_lesions['diameter_minor_ax'])
     
     return synthetic_lesions
 
@@ -127,9 +120,9 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
 
 def generate_synthetic_patients(num_sim_patients: int, 
                                 base_radiomic_data: pd.DataFrame,
+                                lesion_selection_rng: np.random.Generator,
                                 expected_num_lesions: int = 10,
                                 location_label: str = "LABEL",
-                                random_seed: int | None = None,
                                 ) -> pd.DataFrame:
     """Generate synthetic patient lesion data from an existing dataset"""
     synth_lesion_list = [
@@ -138,11 +131,18 @@ def generate_synthetic_patients(num_sim_patients: int,
             expected_num_lesions=expected_num_lesions,
             patient_id=pat_idx,
             location_label=location_label,
-            random_seed=random_seed
+            lesion_selection_rng=lesion_selection_rng
         )
         for pat_idx in range(num_sim_patients)
     ]
 
     synth_lesion_pd = pd.concat(synth_lesion_list, ignore_index=True)
+
+    # Add volumes
+    synth_lesion_pd['volume_cc_pre'] = volume_calc(synth_lesion_pd['diameter_pre'])
+    synth_lesion_pd['volume_cc_post'] = volume_calc(synth_lesion_pd['diameter_post'])
+    synth_lesion_pd['volume_cc_3Dmax'] = volume_calc(synth_lesion_pd['diameter_3D_max'])
+    synth_lesion_pd['volume_cc_majorAx'] = volume_calc(synth_lesion_pd['diameter_major_ax'])
+    synth_lesion_pd['volume_cc_minorAx'] = volume_calc(synth_lesion_pd['diameter_minor_ax'])
 
     return synth_lesion_pd

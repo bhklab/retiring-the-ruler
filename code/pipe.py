@@ -1,5 +1,6 @@
 
 import pandas as pd
+import numpy as np
 from damply import dirs
 from pathlib import Path
 from synthetic_gen import generate_synthetic_patients
@@ -29,22 +30,25 @@ def pipe(radiomic_features_filepath: str,
     # Calculate the true volume of the segmentation
     rad_data['volume_cc_contoured'] = rad_data['original_shape_VoxelVolume'] * rad_data['slice_thickness'] / 1000
 
+    lesion_selection_rng = np.random.default_rng(random_seed)
+
     # Generate lesion measurements for N synthetic patients with 1 to M synthetic lesions based on real lesion data
     synth_lesions = generate_synthetic_patients(num_sim_patients=num_sim_patients,
                                                 base_radiomic_data=rad_data,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
-                                                random_seed=random_seed)
+                                                lesion_selection_rng=lesion_selection_rng)
 
     # Assess the RECIST response category of each synthetic patient using all lesions
     synth_response = recist_assess(synth_lesions)
 
     # Reassess RECIST iteratively using 1-10 target lesions per patient (max 2 per location)
     for num_targets in range(1, 11):
+
         target_lesions = select_target_lesions(num_lesions=num_targets,
-                                                      lesion_data=synth_lesions,
-                                                      random_seed=random_seed
-                                                      )
+                                               lesion_data=synth_lesions,
+                                               lesion_selection_rng=lesion_selection_rng
+                                               )
         # Reassess RECIST categorization with subset of lesions
         select_target_response = recist_assess(target_lesions)
         # Add RECIST category for this number of target lesions

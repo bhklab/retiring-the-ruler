@@ -40,16 +40,13 @@ def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
 
 def select_target_lesions(num_lesions:int,
                           lesion_data:pd.DataFrame,
-                          random_seed: int | None = None) -> pd.DataFrame:
+                          lesion_selection_rng: np.random.Generator,) -> pd.DataFrame:
     """Randomly select specified number of target lesions from lesion data, ensuring no more than 2 are selected for each location
        following RECIST specifications.
        
        Returns the selected target lesion rows from lesion data.
        """
-    # Initialize random number generator
-    rng = np.random.default_rng(random_seed)
-
-    patients, lesion_counts = np.unique(lesion_data['patient_id'], return_counts=True)
+    patients = np.unique(lesion_data['patient_id'])
 
     # ensure that there is not more than 2 target lesions per location
     target_lesions = []
@@ -66,14 +63,14 @@ def select_target_lesions(num_lesions:int,
             # select up to 2 lesions
             if len(targets_at_loc_idx) > 2:
                 # select 2 random indices
-                targets_at_loc_idx = rng.choice(list(targets_at_loc_idx), 2, replace=False)
+                targets_at_loc_idx = lesion_selection_rng.choice(list(targets_at_loc_idx), 2, replace=False)
                 selected_lesion_idx.extend(targets_at_loc_idx)
             else:
                 selected_lesion_idx.extend(targets_at_loc_idx)
         
         # If there are more selected lesions from this location than the required number of lesions, randomly select from these
         if len(selected_lesion_idx) > num_lesions:
-            target_lesions.extend(rng.choice(selected_lesion_idx, num_lesions))
+            target_lesions.extend(lesion_selection_rng.choice(selected_lesion_idx, num_lesions))
         else:
             target_lesions.extend(selected_lesion_idx)
     
@@ -84,11 +81,9 @@ def select_target_lesions(num_lesions:int,
 
 
 
-
 def recist_metrics_by_target_count(patient_response: pd.DataFrame,
                                     max_targets: int = 11
                                     ) -> tuple[list, list]:
-
     accuracy = []
     pd_sensitivity = []
     for num_targets in range(1, max_targets):
