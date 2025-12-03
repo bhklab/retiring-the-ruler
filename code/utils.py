@@ -61,13 +61,13 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
 
     for lesion_idx in range(n_lesions):
         # Select a random index
-        ind = random.choice(base_radiomic_data.index)
+        ind = rng.choice(base_radiomic_data.index)
 
         # Generate diameter (pre-treatment)
         diameter_pre = base_radiomic_data['original_shape_Maximum2DDiameterSlice'][ind]
 
         # Generate diameter change
-        diameter_change = diameter_change_dist.rvs(size=1)[0]
+        diameter_change = diameter_change_dist.rvs(size=1, random_state=random_seed)[0]
 
         # Generate diameter (post-treatment)
         diameter_post = diameter_pre + diameter_pre * diameter_change
@@ -94,7 +94,7 @@ def generate_synthetic_lesions(diameter_change_dist: rv_continuous,
         
     
     # Convert to DataFrame
-    synthetic_lesions = {'patient_id': patient_id, 'lesion_data': lesion_data}
+    synthetic_lesions = pd.DataFrame.from_dict(lesion_data, orient='index')
     
     
     return synthetic_lesions
