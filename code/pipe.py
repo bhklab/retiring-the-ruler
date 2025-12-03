@@ -1,14 +1,16 @@
-import numpy as np
-import pandas as pd
 
+import pandas as pd
+from damply import dirs
+from pathlib import Path
 from synthetic_gen import generate_synthetic_patients
-from recist import recist_assess
+from recist import recist_assess, select_target_lesions, recist_accuracy_by_target_count
 
 
 def pipe(radiomic_features_filepath: str,
          num_sim_patients: int = 10000,
          expected_num_lesions: int = 10,
          location_label: str = "LABEL",
+         save_out: bool = False,
          random_seed: int | None = None
          ):
     # Load radiomics data
@@ -20,17 +22,40 @@ def pipe(radiomic_features_filepath: str,
     # Calculate the true volume of the segmentation
     rad_data['volume_cc_contoured'] = rad_data['original_shape_VoxelVolume'] * rad_data['slice_thickness'] / 1000
 
+    # Generate lesion measurements for N synthetic patients with 1 to M synthetic lesions based on real lesion data
     synth_lesions = generate_synthetic_patients(num_sim_patients=num_sim_patients,
                                                 base_radiomic_data=rad_data,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
                                                 random_seed=random_seed)
-    
-    patient_ids, lesion_counts = np.unique(synth_lesions['patient_id'], return_counts=True)
+    # patient_ids, lesion_counts = np.unique(synth_lesions['patient_id'], return_counts=True)
 
+    # Assess the RECIST response category of each synthetic patient using all lesions
     synth_response = recist_assess(synth_lesions)
 
-    print(synth_response)
+    # Reassess RECIST iteratively using 1-10 target lesions per patient (max 2 per location)
+    for num_targets in range(1, 11):
+        target_lesions = select_target_lesions(num_lesions=num_targets,
+                                                      lesion_data=synth_lesions,
+                                                      random_seed=random_seed
+                                                      )
+        # Reassess RECIST categorization with subset of lesions
+        select_target_response = recist_assess(target_lesions)
+        # Add RECIST category for this number of target lesions
+        synth_response[f"RECIST ({num_targets} targets)"] = select_target_response['RECIST (all)']
+    
+
+    # Calculate the classification accuracy for RECIST as a function of the number of target lesions
+    recist_accuracy = recist_accuracy_by_target_count(patient_response=synth_response,
+                                                      max_targets=11)
+
+    if save_out:
+        dataset_name = Path(radiomic_features_filepath).parent.stem
+        out_path = dirs.PROCDATA / dataset_name
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        synth_lesions.to_csv(out_path / f"{dataset_name}_synthetic_lesions.csv", index_label="index")
+        synth_response.to_csv(out_path / f"{dataset_name}_synthetic_patient_response.csv", index_label="index")
 
 
     
@@ -39,6 +64,7 @@ def pipe(radiomic_features_filepath: str,
 
 if __name__ == '__main__':
     pipe("data/rawdata/SARC021/SARC021_radiomics.csv",
-         num_sim_patients = 2,
-         expected_num_lesions = 3,
-         random_seed=10)
+         num_sim_patients = 5,
+         expected_num_lesions = 10,
+         save_out=True,
+         random_seed=None)
