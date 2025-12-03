@@ -30,9 +30,14 @@ ipython = "*"
 ipykernel = "*"
 jupyterlab = "*"
 pip = "*"
+numpy = ">=2.3.5,<3"
+pandas = ">=2.3.3,<3"
+seaborn = ">=0.13.2,<0.14"
+joblib = ">=1.5.2,<2"
 
 [pypi-dependencies]
 damply = ">=0.10.0, <0.11"
+stats = ">=0.1.2a0, <0.2"
 
 [tasks]
 example_script = {cmd="python $SCRIPTS/example_script.py", description="Run an example script"}
