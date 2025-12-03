@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from utils import (
-    generate_synthetic_patients,
-)
+from synthetic_gen import generate_synthetic_patients
+from recist import recist_assess
 
 
 def pipe(radiomic_features_filepath: str,
@@ -29,7 +28,11 @@ def pipe(radiomic_features_filepath: str,
     
     patient_ids, lesion_counts = np.unique(synth_lesions['patient_id'], return_counts=True)
 
-    print(patient_ids, lesion_counts)
+    synth_response = recist_assess(synth_lesions)
+
+    print(synth_response)
+
+
     
     return None
 
