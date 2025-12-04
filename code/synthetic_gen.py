@@ -35,11 +35,12 @@ def volume_calc(diameter:float) -> float:
 
 
 def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
+                               lesion_selection_rng: np.random.Generator,
                                expected_num_lesions: int = 10,
                                max_num_lesions: int = 30,
                                patient_id: int | str = 0,
                                location_label: str = "LABEL",
-                               lesion_selection_rng: int | None = None,
+                               random_seed: int | None = None,
                                ) -> pd.DataFrame:
     """
     Generate synthetic lesion measurement data. 
@@ -54,12 +55,21 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
             * original_shape_Maximum3DDiameter
             * original_shape_MajorAxisLength
             * original_shape_MinorAxisLength
+    lesion_selection_rng: np.random.Generator
+        Random number generator to use for synthetic lesion creation.
     expected_num_lesions: int
         Expected number of lesions to use for poisson distribution
     patient_id: int | str
         Patient ID to label all these lesions with
     location_label: str
-        Name of tumour location label in the 
+        Name of tumour location label in the radiomic feature data.
+    random_seed: int | None = None
+        Seed to use for diameter change value selection for reproducibility.
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of synthetic lesion measurement data.
     """
     if location_label not in base_radiomic_data.columns:
         message = f"{location_label} is not a column name in the provided radiomic data."
@@ -75,7 +85,7 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
                                                         high_end=3,
                                                         mean=0,
                                                         std_dev=0.3)
-
+    diameter_change_list = diameter_change_dist.rvs(size=n_lesions, random_state=random_seed)
     # Initialize dictionary to hold lesion data
     lesion_data = {}
     
@@ -87,7 +97,7 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
         diameter_pre = base_radiomic_data['original_shape_Maximum2DDiameterSlice'][ind]
 
         # Generate diameter change
-        diameter_change = diameter_change_dist.rvs(size=1)[0]
+        diameter_change = diameter_change_list[lesion_idx]
 
         # Generate diameter (post-treatment)
         diameter_post = diameter_pre + diameter_pre * diameter_change
@@ -128,8 +138,11 @@ def generate_synthetic_patients(num_sim_patients: int,
                                 expected_num_lesions: int = 10,
                                 max_num_lesions: int = 30,
                                 location_label: str = "LABEL",
+                                random_seed: int | None = None
                                 ) -> pd.DataFrame:
     """Generate synthetic patient lesion data from an existing dataset"""
+
+
     synth_lesion_list = [
         generate_synthetic_lesions(
             base_radiomic_data=base_radiomic_data,
@@ -137,7 +150,8 @@ def generate_synthetic_patients(num_sim_patients: int,
             max_num_lesions=max_num_lesions,
             patient_id=pat_idx,
             location_label=location_label,
-            lesion_selection_rng=lesion_selection_rng
+            lesion_selection_rng=lesion_selection_rng,
+            random_seed=pat_idx if random_seed else None
         )
         for pat_idx in range(num_sim_patients)
     ]

@@ -83,7 +83,8 @@ def pipe(radiomic_features_filepath: str,
                                                 base_radiomic_data=rad_data,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
-                                                lesion_selection_rng=lesion_selection_rng)
+                                                lesion_selection_rng=lesion_selection_rng,
+                                                random_seed=random_seed)
     logger.info('Synthetic lesion generation finished.')
     logger.info('Performing RECIST assessment of synthetic lesions.')
     # Assess the RECIST response category of each synthetic patient using all lesions
@@ -91,7 +92,6 @@ def pipe(radiomic_features_filepath: str,
 
     # Reassess RECIST iteratively using 1-10 target lesions per patient (max 2 per location)
     for num_targets in range(1, 11):
-
         target_lesions = select_target_lesions(num_lesions=num_targets,
                                                lesion_data=synth_lesions,
                                                lesion_selection_rng=lesion_selection_rng
