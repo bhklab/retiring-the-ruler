@@ -34,6 +34,8 @@ numpy = ">=2.3.5,<3"
 pandas = ">=2.3.3,<3"
 seaborn = ">=0.13.2,<0.14"
 click = ">=8.3.1,<9"
+joblib = ">=1.5.2,<2"
+tqdm = ">=4.67.1,<5"
 
 [pypi-dependencies]
 damply = ">=0.10.0, <0.11"
@@ -60,14 +62,16 @@ args = ["radiomic_features_filepath",
         {arg = "random_seed", default='165'},
         {arg = "num_sim_patients", default='100'},
         {arg = "expected_num_lesions", default='10'},
-        {arg = "location_label", default='LABEL'}
+        {arg = "location_label", default='LABEL'},
+        {arg = "parallel", default = 'False'}
 ]
 cmd = ["python", "$SCRIPTS/pipe.py",
         "{{ radiomic_features_filepath }}",
         "--num_sim_patients", "{{ num_sim_patients }}",
         "--expected_num_lesions", "{{ expected_num_lesions }}",
         "--location_label", "{{ location_label }}",
-        "--random_seed", "{{ random_seed }}"
+        "--random_seed", "{{ random_seed }}",
+        "--parallel", "{{ parallel }}"
         ]
 
 ############################################## QUALITY ###############################################
