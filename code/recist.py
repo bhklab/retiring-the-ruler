@@ -88,6 +88,22 @@ def select_target_lesions(num_lesions:int,
 def recist_metrics_by_target_count(patient_response: pd.DataFrame,
                                     max_targets: int = 11
                                     ) -> tuple[list, list]:
+    """Calculate RECIST response categorization accuracy and sensitivity to progressive disease (PD) when using different numbers of target lesions in the range 1 to max_targets. If there are no patients with a target value, 0 will be saved for that target number.
+    
+    Parameters
+    ----------
+    patient_response: pd.DataFrame,
+        Response data for a set of patients, like that output by recist_assess.
+    max_targets: int = 11
+        Maximum number of target lesions to test. 
+
+    Returns
+    -------
+    accuracy:list
+        Accuracy values for each number of targets selected.
+    pd_sensitivity: list
+        Sensitivity values for each number of targets selected.
+    """
     accuracy = []
     pd_sensitivity = []
     for num_targets in range(1, max_targets):
