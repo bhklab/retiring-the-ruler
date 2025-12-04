@@ -1,38 +1,43 @@
 import numpy as np
 import pandas as pd
 
+# RECIST response category thresholds
+PD_THRESHOLD = 20
+SD_THRESHOLD = -30
+PR_THRESHOLD = -100
+
 
 def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
     """Calculate RECIST response category from lesion diameter data."""
     patients, lesion_counts = np.unique(lesion_data['patient_id'], return_counts=True)
 
-    # Calculate the sum of longest diameters (SLD) for pre, post
-    SLD_pre = [np.sum(lesion_data['diameter_pre'][lesion_data['patient_id'] == p]) for p in patients]
-    SLD_post = [np.sum(lesion_data['diameter_post'][lesion_data['patient_id'] == p]) for p in patients]
+    # Calculate the sum of longest diameters (sld) for pre, post
+    sld_pre = [np.sum(lesion_data['diameter_pre'][lesion_data['patient_id'] == p]) for p in patients]
+    sld_post = [np.sum(lesion_data['diameter_post'][lesion_data['patient_id'] == p]) for p in patients]
 
-    # Calculte the percentage different in the sum of longest diameters (SLD) pre and post
-    SLD_chg = [(SLD_post[i] - SLD_pre[i])/SLD_pre[i] * 100 for i in range(len(SLD_pre))]
+    # Calculte the percentage different in the sum of longest diameters (sld) pre and post
+    sld_chg = [(sld_post[i] - sld_pre[i])/sld_pre[i] * 100 for i in range(len(sld_pre))]
 
     # Initialize RECIST response vector
-    RECIST_response = []
+    recist_response = []
 
-    # Classify each patient's response based on the percent change in SLD
+    # Classify each patient's response based on the percent change in sld
     for idx, _patient in enumerate(patients):
-        if SLD_chg[idx] > 20:
-            RECIST_response.append('PD')
-        elif -30 < SLD_chg[idx] <= 20:
-            RECIST_response.append('SD')
-        elif -100 < SLD_chg[idx] <= -30:
-            RECIST_response.append('PR')
-        elif SLD_chg[idx] == -100:
-            RECIST_response.append('CR')
+        if sld_chg[idx] > PD_THRESHOLD:
+            recist_response.append('PD')
+        elif SD_THRESHOLD < sld_chg[idx] <= PD_THRESHOLD:
+            recist_response.append('SD')
+        elif PR_THRESHOLD < sld_chg[idx] <= SD_THRESHOLD:
+            recist_response.append('PR')
+        elif sld_chg[idx] == PR_THRESHOLD:
+            recist_response.append('CR')
 
     patient_response = pd.DataFrame({'patient_id': patients, 
                                 'num_lesions': lesion_counts, 
-                                'SLD_pre': SLD_pre, 
-                                'SLD_post': SLD_post, 
-                                'SLD_chg': SLD_chg, 
-                                'RECIST (all)': RECIST_response})
+                                'sld_pre': sld_pre, 
+                                'sld_post': sld_post, 
+                                'sld_chg': sld_chg, 
+                                'RECIST (all)': recist_response})
     
     return patient_response
 
