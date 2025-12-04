@@ -1,13 +1,27 @@
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 # RECIST response category thresholds
 PD_THRESHOLD = 20
 SD_THRESHOLD = -30
 PR_THRESHOLD = -100
 
+def recist_thresholding(sld_chg):
+    if sld_chg > PD_THRESHOLD:
+        return 'PD'
+    elif SD_THRESHOLD < sld_chg <= PD_THRESHOLD:
+        return 'SD'
+    elif PR_THRESHOLD < sld_chg <= SD_THRESHOLD:
+        return 'PR'
+    elif sld_chg == PR_THRESHOLD:
+        return 'CR'
 
-def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
+
+def recist_assess(lesion_data:pd.DataFrame,
+                  parallel:bool = False
+                  ) -> pd.DataFrame:
     """Calculate RECIST response category from lesion diameter data."""
     patients, lesion_counts = np.unique(lesion_data['patient_id'], return_counts=True)
 
@@ -22,15 +36,24 @@ def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
     recist_response = []
 
     # Classify each patient's response based on the percent change in sld
-    for idx, _patient in enumerate(patients):
-        if sld_chg[idx] > PD_THRESHOLD:
-            recist_response.append('PD')
-        elif SD_THRESHOLD < sld_chg[idx] <= PD_THRESHOLD:
-            recist_response.append('SD')
-        elif PR_THRESHOLD < sld_chg[idx] <= SD_THRESHOLD:
-            recist_response.append('PR')
-        elif sld_chg[idx] == PR_THRESHOLD:
-            recist_response.append('CR')
+    if parallel:
+        recist_response = Parallel()(
+            delayed(recist_thresholding)(
+                sld_chg=sld_chg[pat_idx]
+            )
+            for pat_idx in tqdm(range(len(patients)), 
+                                desc="Performing RECIST assessment...", 
+                                total=len(patients))
+        )
+    else:
+        recist_response = [
+            recist_thresholding(
+                sld_chg = sld_chg[pat_idx]
+            ) 
+            for pat_idx in tqdm(range(len(patients)), 
+                                desc="Performing RECIST assessment...", 
+                                total=len(patients))
+        ]
 
     patient_response = pd.DataFrame({'patient_id': patients, 
                                 'num_lesions': lesion_counts, 
@@ -38,7 +61,7 @@ def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
                                 'sld_post': sld_post, 
                                 'sld_chg': sld_chg, 
                                 'RECIST (all)': recist_response})
-    
+    patient_response = patient_response.sort_values(by='patient_id', ignore_index=True)
     return patient_response
 
 

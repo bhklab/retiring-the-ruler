@@ -14,6 +14,7 @@ from plot import (
 )
 from recist import recist_assess, recist_metrics_by_target_count, select_target_lesions
 from synthetic_gen import generate_synthetic_patients
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -93,16 +94,16 @@ def pipe(radiomic_features_filepath: str,
     logger.info('Synthetic lesion generation finished.')
     logger.info('Performing RECIST assessment of synthetic lesions.')
     # Assess the RECIST response category of each synthetic patient using all lesions
-    synth_response = recist_assess(synth_lesions)
+    synth_response = recist_assess(synth_lesions, parallel=parallel)
 
     # Reassess RECIST iteratively using 1-10 target lesions per patient (max 2 per location)
-    for num_targets in range(1, 11):
+    for num_targets in tqdm(range(1, 11), desc="RECIST assessment for different target counts"):
         target_lesions = select_target_lesions(num_lesions=num_targets,
                                                lesion_data=synth_lesions,
                                                lesion_selection_rng=lesion_selection_rng
                                                )
         # Reassess RECIST categorization with subset of lesions
-        select_target_response = recist_assess(target_lesions)
+        select_target_response = recist_assess(target_lesions, parallel=parallel)
         # Add RECIST category for this number of target lesions
         synth_response[f"RECIST ({num_targets} targets)"] = select_target_response['RECIST (all)']
 
