@@ -7,8 +7,10 @@ import seaborn as sns
 from matplotlib.figure import Figure
 
 
-def save_plot(figure,
-              filepath:Path):
+def save_plot(figure: Figure,
+              filepath:Path
+              ) -> None:
+    """Save out matplotlib figure to given filepath."""
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
     figure.savefig(filepath,
@@ -16,10 +18,10 @@ def save_plot(figure,
                    )
 
 
-
-def plot_recist_accuracy(recist_accuracy,
+def plot_recist_accuracy(recist_accuracy:list,
                          save_path: Path | None = None
                          ) -> Figure:
+    """Plot RECIST response categorization accuracy values as a scatter plot with a red line at 5 lesions (RECIST 1.1 standard)."""
     fig = plt.figure(figsize=(8, 6))
     plt.axvline(5, color='red', linestyle='--', label='RECIST v1.1')
     plt.scatter(range(1, 11), 1 - np.array(recist_accuracy) / 100, marker='o', s=75, label = 'Observation')
@@ -35,9 +37,10 @@ def plot_recist_accuracy(recist_accuracy,
     return fig
 
 
-def plot_pd_sensitivity(pd_sensitivity,
+def plot_pd_sensitivity(pd_sensitivity:list,
                         save_path: Path | None = None
                         ) -> Figure:
+    """Plot sensitivity to progressive disease (PD) status of RECIST classification at different numbers of target lesions as a scatter plot."""
     fig = plt.figure(figsize=(8, 6))
     plt.axvline(5, color='red', linestyle='--', label='RECIST v1.1')
     plt.scatter(range(1, 11), np.array(pd_sensitivity) / 100, marker='o', s=75, label = 'Observation')
@@ -53,10 +56,11 @@ def plot_pd_sensitivity(pd_sensitivity,
     return fig
 
 
-def plot_acc_and_sens(accuracy,
-                      sensitivity,
+def plot_acc_and_sens(accuracy:list,
+                      sensitivity:list,
                       save_path: Path | None = None
                       ) -> Figure:
+    """Scatter plots of accuracy (blue) and PD sensitivity (brown) on the same plot."""
     # Plot sensitivity and misclassification rate on the same plot
     fig, ax1 = plt.subplots(figsize=(8, 6))
 
@@ -94,14 +98,15 @@ def plot_acc_and_sens(accuracy,
 
 
 def plot_vol_vs_diameter(lesion_data: pd.DataFrame,
-                        save_path: Path | None = None):
-
-    diameters = lesion_data['diameter_pre'].values / 10
-    volumes = lesion_data['volume_cc_contoured'].values
+                        save_path: Path | None = None
+                        ) -> tuple[Figure, Figure]:
+    """Scatter plot of observed volume vs. expected volume and separate scatter plot of volume varition and expected volume."""
+    diameters = lesion_data['diameter_pre'].to_numpy() / 10
+    volumes = lesion_data['volume_cc_contoured'].to_numpy()
 
     expected_volume = 4/3 * np.pi * (np.linspace(0,25,100)/2)**3
 
-    # remove any points where the volume is >100 if the diameter is < 2
+    # remove any points where the volume is >100 if the diameter is <= 3
     idx_to_keep = ~np.logical_and(diameters <= 3, volumes >= 100)
     diameters = diameters[idx_to_keep]
     volumes = volumes[idx_to_keep]
