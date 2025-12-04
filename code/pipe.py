@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @click.option('--expected_num_lesions', type=click.IntRange(1, 30), default=10, help="Expected number of lesions per patient. Must be between 1 and 30.")
 @click.option('--location_label', type=click.STRING, default='LABEL', help="Location column label in the radiomic feature data.")
 @click.option('--save_out', type=click.BOOL, default=True, help='Whether to save out the simulated lesion data and plots for analysis.')
-@click.option('--random_seed', type=click.INT, help="Random seed to use for reproducible results. Used to initialize the random number generators.")
+@click.option('--random_seed', type=click.INT, default=None, help="Random seed to use for reproducible results. Used to initialize the random number generators.")
 def pipe(radiomic_features_filepath: str,
          num_sim_patients: int = 100,
          expected_num_lesions: int = 10,
