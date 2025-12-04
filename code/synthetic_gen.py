@@ -59,12 +59,10 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
     if location_label not in base_radiomic_data.columns:
         raise ValueError(f"{location_label} is not a column name in the provided radiomic data.")
 
-    # Generate random number of lesions with poisson distribution
-    rng_poisson = np.random.default_rng()
     n_lesions = 0
     # Select a number of lesions until the value is between 1 and 30
     while n_lesions < 1 or n_lesions > 30:
-        n_lesions = rng_poisson.poisson(expected_num_lesions)
+        n_lesions = lesion_selection_rng.poisson(expected_num_lesions)
 
     # Generated truncated normal distribution setup - used for diameter change
     diameter_change_dist = truncate_normal_distribution(min=-1,
