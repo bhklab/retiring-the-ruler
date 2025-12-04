@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 
+import click
 import numpy as np
 import pandas as pd
 from damply import dirs
@@ -16,11 +17,19 @@ from synthetic_gen import generate_synthetic_patients
 
 logger = logging.getLogger(__name__)
 
+
+@click.command()
+@click.argument('radiomic_features_filepath', type=click.Path(exists=True))
+@click.option('--num_sim_patients', type=click.INT, default=100, help="Number of patients to generate simulations for.")
+@click.option('--expected_num_lesions', type=click.IntRange(1, 30), default=10, help="Expected number of lesions per patient. Must be between 1 and 30.")
+@click.option('--location_label', type=click.STRING, default='LABEL', help="Location column label in the radiomic feature data.")
+@click.option('--save_out', type=click.BOOL, default=True, help='Whether to save out the simulated lesion data and plots for analysis.')
+@click.option('--random_seed', type=click.INT, help="Random seed to use for reproducible results. Used to initialize the random number generators.")
 def pipe(radiomic_features_filepath: str,
-         num_sim_patients: int = 10000,
+         num_sim_patients: int = 100,
          expected_num_lesions: int = 10,
          location_label: str = "LABEL",
-         save_out: bool = False,
+         save_out: bool = True,
          random_seed: int | None = None
          ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Retiring the Ruler Simulation pipeline
@@ -31,13 +40,13 @@ def pipe(radiomic_features_filepath: str,
     ----------
     radiomic_features_filepath: str
         Real radiomic feature data with diameter and volume data to generate simulation from.
-    num_sim_patients: int = 10000
+    num_sim_patients: int = 100
         Number of patients to generate simulations for
     expected_num_lesions: int = 10
         Expected number of lesions per patient. Used to set up a Poisson distribution to select from.
     location_label: str = "LABEL"
         Label in the radiomic feature data identifying where the ground truth tumor is located.
-    save_out: bool = False
+    save_out: bool = True
         Whether to save out the simulated lesion data and plots for analysis.
     random_seed: int | None = None
         Random seed to use for reproducible results. Used to initialize the random number generators.
@@ -53,7 +62,7 @@ def pipe(radiomic_features_filepath: str,
     """
     dataset_name = Path(radiomic_features_filepath).parent.stem
 
-    logging.basicConfig(filename=f'logs/pipe_{dataset_name}.log', level=logging.INFO, format='%(asctime)s %(message)s')
+    logging.basicConfig(filename=dirs.LOGS /f'pipe_{dataset_name}.log', level=logging.INFO, format='%(asctime)s %(message)s')
     logger.info('\n')
     logger.info(f'Retiring the Ruler pipeline started for {dataset_name}')
 
@@ -118,8 +127,4 @@ def pipe(radiomic_features_filepath: str,
 
 
 if __name__ == '__main__':
-    pipe("data/rawdata/SARC021/SARC021_radiomics.csv",
-         num_sim_patients = 100,
-         expected_num_lesions = 10,
-         save_out=True,
-         random_seed=165)
+    pipe()
