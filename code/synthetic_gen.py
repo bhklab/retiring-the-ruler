@@ -115,7 +115,7 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
         diameter_minor_ax = base_radiomic_data['original_shape_MinorAxisLength'][ind]
 
         # Append metadata for this lesion to main list
-        lesion_data[lesion_idx] = {'patient_id': str(patient_id),
+        lesion_data[lesion_idx] = {'patient_id': patient_id,
                                    'lesion_idx': lesion_idx,
                                    'diameter_pre': diameter_pre,
                                    'diameter_change': diameter_change,
@@ -144,7 +144,6 @@ def generate_synthetic_patients(num_sim_patients: int,
                                 parallel: bool = False
                                 ) -> pd.DataFrame:
     """Generate synthetic patient lesion data from an existing dataset"""
-
     if parallel:
         synth_lesion_list = Parallel()(
             delayed(generate_synthetic_lesions)(
@@ -177,7 +176,7 @@ def generate_synthetic_patients(num_sim_patients: int,
         ]
 
     synth_lesion_pd = pd.concat(synth_lesion_list, ignore_index=True)
-    synth_lesion_pd = synth_lesion_pd.sort_values(by='patient_id')
+    synth_lesion_pd = synth_lesion_pd.sort_values(by='patient_id', ignore_index=True)
 
     # Add volumes
     synth_lesion_pd['volume_cc_pre'] = volume_calc(synth_lesion_pd['diameter_pre'])
