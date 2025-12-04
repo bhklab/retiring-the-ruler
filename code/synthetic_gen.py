@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import truncnorm, rv_continuous
+from scipy.stats import rv_continuous, truncnorm
 
 
 def truncate_normal_distribution(min: int = -1,

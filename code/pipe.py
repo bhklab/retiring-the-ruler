@@ -1,16 +1,17 @@
 
-import pandas as pd
-import numpy as np
-from damply import dirs
 from pathlib import Path
-from synthetic_gen import generate_synthetic_patients
-from recist import recist_assess, select_target_lesions, recist_metrics_by_target_count
+
+import numpy as np
+import pandas as pd
+from damply import dirs
 from plot import (
-    plot_recist_accuracy, 
-    plot_pd_sensitivity,
     plot_acc_and_sens,
-    plot_vol_vs_diameter
+    plot_pd_sensitivity,
+    plot_recist_accuracy,
+    plot_vol_vs_diameter,
 )
+from recist import recist_assess, recist_metrics_by_target_count, select_target_lesions
+from synthetic_gen import generate_synthetic_patients
 
 
 def pipe(radiomic_features_filepath: str,
@@ -73,7 +74,6 @@ def pipe(radiomic_features_filepath: str,
     acc_sense_plot = plot_acc_and_sens(recist_accuracy, pd_sensitivity, plot_path)
     vol_v_diam_plot, vol_var_v_diam_plot = plot_vol_vs_diameter(synth_lesions, plot_path)
     
-    return
 
 
 if __name__ == '__main__':

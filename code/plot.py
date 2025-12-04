@@ -1,10 +1,11 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import pandas as pd
-
+import seaborn as sns
 from matplotlib.figure import Figure
-from pathlib import Path
+
 
 def save_plot(figure,
               filepath:Path):
@@ -14,7 +15,6 @@ def save_plot(figure,
                    bbox_inches = 'tight',
                    )
 
-    return
 
 
 def plot_recist_accuracy(recist_accuracy,

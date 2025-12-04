@@ -40,7 +40,7 @@ def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
 
 def select_target_lesions(num_lesions:int,
                           lesion_data:pd.DataFrame,
-                          lesion_selection_rng: np.random.Generator,) -> pd.DataFrame:
+                          lesion_selection_rng: np.random.Generator) -> pd.DataFrame:
     """Randomly select specified number of target lesions from lesion data, ensuring no more than 2 are selected for each location
        following RECIST specifications.
        
