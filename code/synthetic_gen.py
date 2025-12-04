@@ -3,8 +3,8 @@ import pandas as pd
 from scipy.stats import rv_continuous, truncnorm
 
 
-def truncate_normal_distribution(min: int = -1,
-                                 max: int = 3,
+def truncate_normal_distribution(low_end: int = -1,
+                                 high_end: int = 3,
                                  mean: float = 0,
                                  std_dev: float = 0.3
                                  ) -> rv_continuous:
@@ -12,26 +12,31 @@ def truncate_normal_distribution(min: int = -1,
 
     Parameters
     ----------
-    min: int
-    max:
-    mean:
-    std_dev:
-
+    low_end: int = -1
+        Minimum value for normal distribution.
+    high_end: int = 3,
+        Maximum value for normal distribution.
+    mean: float = 0
+        Mean value for normal distribution.
+    std_dev: float = 0.3
+        Standard deviation for normal distribution.
+    
     Returns
     -------
     rv_continuous instance
         A truncated normal continuous random variable.
     """
-    return truncnorm((min - mean) / std_dev, (max - mean) / std_dev, loc=mean, scale=std_dev)
+    return truncnorm((low_end - mean) / std_dev, (high_end - mean) / std_dev, loc=mean, scale=std_dev)
 
 
-def volume_calc(diameter):
+def volume_calc(diameter:float) -> float:
     """Calculate volume of lesion based on the diameter and assumption it is a sphere"""
     return (4/3 * np.pi * (diameter/2)**3) / 1000
 
 
 def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
                                expected_num_lesions: int = 10,
+                               max_num_lesions: int = 30,
                                patient_id: int | str = 0,
                                location_label: str = "LABEL",
                                lesion_selection_rng: int | None = None,
@@ -57,20 +62,21 @@ def generate_synthetic_lesions(base_radiomic_data: pd.DataFrame,
         Name of tumour location label in the 
     """
     if location_label not in base_radiomic_data.columns:
-        raise ValueError(f"{location_label} is not a column name in the provided radiomic data.")
+        message = f"{location_label} is not a column name in the provided radiomic data."
+        raise ValueError(message)
 
     n_lesions = 0
     # Select a number of lesions until the value is between 1 and 30
-    while n_lesions < 1 or n_lesions > 30:
+    while n_lesions < 1 or n_lesions > max_num_lesions:
         n_lesions = lesion_selection_rng.poisson(expected_num_lesions)
 
     # Generated truncated normal distribution setup - used for diameter change
-    diameter_change_dist = truncate_normal_distribution(min=-1,
-                                                        max=3,
+    diameter_change_dist = truncate_normal_distribution(low_end=-1,
+                                                        high_end=3,
                                                         mean=0,
                                                         std_dev=0.3)
 
-    # Initialize list to hold lesion data
+    # Initialize dictionary to hold lesion data
     lesion_data = {}
     
     for lesion_idx in range(n_lesions):
@@ -120,6 +126,7 @@ def generate_synthetic_patients(num_sim_patients: int,
                                 base_radiomic_data: pd.DataFrame,
                                 lesion_selection_rng: np.random.Generator,
                                 expected_num_lesions: int = 10,
+                                max_num_lesions: int = 30,
                                 location_label: str = "LABEL",
                                 ) -> pd.DataFrame:
     """Generate synthetic patient lesion data from an existing dataset"""
@@ -127,6 +134,7 @@ def generate_synthetic_patients(num_sim_patients: int,
         generate_synthetic_lesions(
             base_radiomic_data=base_radiomic_data,
             expected_num_lesions=expected_num_lesions,
+            max_num_lesions=max_num_lesions,
             patient_id=pat_idx,
             location_label=location_label,
             lesion_selection_rng=lesion_selection_rng
