@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from scipy.stats import rv_continuous, truncnorm
+from tqdm import tqdm
 
 
 def truncate_normal_distribution(low_end: int = -1,
@@ -138,25 +140,44 @@ def generate_synthetic_patients(num_sim_patients: int,
                                 expected_num_lesions: int = 10,
                                 max_num_lesions: int = 30,
                                 location_label: str = "LABEL",
-                                random_seed: int | None = None
+                                random_seed: int | None = None,
+                                parallel: bool = False
                                 ) -> pd.DataFrame:
     """Generate synthetic patient lesion data from an existing dataset"""
 
-
-    synth_lesion_list = [
-        generate_synthetic_lesions(
-            base_radiomic_data=base_radiomic_data,
-            expected_num_lesions=expected_num_lesions,
-            max_num_lesions=max_num_lesions,
-            patient_id=pat_idx,
-            location_label=location_label,
-            lesion_selection_rng=lesion_selection_rng,
-            random_seed=pat_idx if random_seed else None
+    if parallel:
+        synth_lesion_list = Parallel()(
+            delayed(generate_synthetic_lesions)(
+                base_radiomic_data=base_radiomic_data,
+                expected_num_lesions=expected_num_lesions,
+                max_num_lesions=max_num_lesions,
+                patient_id=pat_idx,
+                location_label=location_label,
+                lesion_selection_rng=lesion_selection_rng,
+                random_seed=pat_idx if random_seed else None
+            )
+            for pat_idx in tqdm(range(num_sim_patients),
+                                desc="Generating synthetic lesion data...",
+                                total=num_sim_patients)
         )
-        for pat_idx in range(num_sim_patients)
-    ]
+    else:
+        synth_lesion_list = [
+            generate_synthetic_lesions(
+                base_radiomic_data=base_radiomic_data,
+                expected_num_lesions=expected_num_lesions,
+                max_num_lesions=max_num_lesions,
+                patient_id=pat_idx,
+                location_label=location_label,
+                lesion_selection_rng=lesion_selection_rng,
+                random_seed=pat_idx if random_seed else None
+            )
+            for pat_idx in tqdm(range(num_sim_patients),
+                                desc="Generating synthetic lesion data...",
+                                total=num_sim_patients)
+        ]
 
     synth_lesion_pd = pd.concat(synth_lesion_list, ignore_index=True)
+    synth_lesion_pd = synth_lesion_pd.sort_values(by='patient_id')
 
     # Add volumes
     synth_lesion_pd['volume_cc_pre'] = volume_calc(synth_lesion_pd['diameter_pre'])

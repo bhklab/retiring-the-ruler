@@ -25,12 +25,14 @@ logger = logging.getLogger(__name__)
 @click.option('--location_label', type=click.STRING, default='LABEL', help="Location column label in the radiomic feature data.")
 @click.option('--save_out', type=click.BOOL, default=True, help='Whether to save out the simulated lesion data and plots for analysis.')
 @click.option('--random_seed', type=click.INT, default=None, help="Random seed to use for reproducible results. Used to initialize the random number generators.")
+@click.option('--parallel', type=click.BOOL, default=False, help="Whether to run generation in parallel.")
 def pipe(radiomic_features_filepath: str,
          num_sim_patients: int = 100,
          expected_num_lesions: int = 10,
          location_label: str = "LABEL",
          save_out: bool = True,
-         random_seed: int | None = None
+         random_seed: int | None = None,
+         parallel: bool = False
          ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Retiring the Ruler Simulation pipeline
     
@@ -50,7 +52,9 @@ def pipe(radiomic_features_filepath: str,
         Whether to save out the simulated lesion data and plots for analysis.
     random_seed: int | None = None
         Random seed to use for reproducible results. Used to initialize the random number generators.
-    
+    parallel: bool = False
+        Whether to run the generation in parallel.
+        
     Returns
     -------
     synth_lesions: pd.DataFrame
@@ -84,7 +88,8 @@ def pipe(radiomic_features_filepath: str,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
                                                 lesion_selection_rng=lesion_selection_rng,
-                                                random_seed=random_seed)
+                                                random_seed=random_seed,
+                                                parallel=parallel)
     logger.info('Synthetic lesion generation finished.')
     logger.info('Performing RECIST assessment of synthetic lesions.')
     # Assess the RECIST response category of each synthetic patient using all lesions
