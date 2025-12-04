@@ -46,8 +46,7 @@ def recist_assess(lesion_data:pd.DataFrame) -> pd.DataFrame:
 def select_target_lesions(num_lesions:int,
                           lesion_data:pd.DataFrame,
                           lesion_selection_rng: np.random.Generator) -> pd.DataFrame:
-    """Randomly select specified number of target lesions from lesion data, ensuring no more than 2 are selected for each location
-       following RECIST specifications.
+    """Randomly select specified number of target lesions from lesion data, ensuring no more than 2 are selected for each location following RECIST specifications.
        
        Returns the selected target lesion rows from lesion data.
        """
@@ -94,12 +93,20 @@ def recist_metrics_by_target_count(patient_response: pd.DataFrame,
     for num_targets in range(1, max_targets):
         # Get patients with more than num_targets lesions
         acc_idxs = patient_response['num_lesions'] > num_targets
-        # Get percentage of patients that have the same response category for RECIST (all) as RECIST (num_targets targets) 
-        accuracy.append(np.sum(patient_response['RECIST (all)'][acc_idxs] == patient_response[f"RECIST ({num_targets} targets)"][acc_idxs]) / np.sum(acc_idxs) * 100)
+        # Check that there are patients with enough lesions
+        if acc_idxs.any():
+            # Get percentage of patients that have the same response category for RECIST (all) as RECIST (num_targets targets) 
+            accuracy.append(np.sum(patient_response['RECIST (all)'][acc_idxs] == patient_response[f"RECIST ({num_targets} targets)"][acc_idxs]) / np.sum(acc_idxs) * 100)
+        else:
+            accuracy.append(0)
 
         # Get number of patients with more than num_targets and RECIST category is PD
         sens_idxs = np.logical_and(patient_response['num_lesions'] > num_targets, patient_response['RECIST (all)'] == 'PD')
-        # Calculate sensitivity for detecting progressive disease (PD)
-        pd_sensitivity.append(np.sum(patient_response[f"RECIST ({num_targets} targets)"][sens_idxs] == 'PD') / np.sum(sens_idxs) * 100)
+        # Check that there are patients with enough targets with category PD
+        if sens_idxs.any():
+            # Calculate sensitivity for detecting progressive disease (PD)
+            pd_sensitivity.append(np.sum(patient_response[f"RECIST ({num_targets} targets)"][sens_idxs] == 'PD') / np.sum(sens_idxs) * 100)
+        else:
+            pd_sensitivity.append(0)
 
     return accuracy, pd_sensitivity
