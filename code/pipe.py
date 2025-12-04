@@ -1,4 +1,5 @@
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,7 @@ from plot import (
 from recist import recist_assess, recist_metrics_by_target_count, select_target_lesions
 from synthetic_gen import generate_synthetic_patients
 
+logger = logging.getLogger(__name__)
 
 def pipe(radiomic_features_filepath: str,
          num_sim_patients: int = 10000,
@@ -20,7 +22,38 @@ def pipe(radiomic_features_filepath: str,
          location_label: str = "LABEL",
          save_out: bool = False,
          random_seed: int | None = None
-         ):
+         ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Retiring the Ruler Simulation pipeline
+    
+       Generate synthetic lesion data with pre- and post-treatment diameters and volumes to perform RECIST assessment.
+
+    Parameters
+    ----------
+    radiomic_features_filepath: str
+        Real radiomic feature data with diameter and volume data to generate simulation from.
+    num_sim_patients: int = 10000
+        Number of patients to generate simulations for
+    expected_num_lesions: int = 10
+        Expected number of lesions per patient. Used to set up a Poisson distribution to select from.
+    location_label: str = "LABEL"
+        Label in the radiomic feature data identifying where the ground truth tumor is located.
+    save_out: bool = False
+        Whether to save out the simulated lesion data and plots for analysis.
+    random_seed: int | None = None
+        Random seed to use for reproducible results. Used to initialize the random number generators.
+    
+    Returns
+    -------
+    synth_lesions: pd.DataFrame
+        Measurment data for each synthetic lesion, including diameters, volumes, and location.
+        If save_out is set to True, will be saved out to the data/procdata directory. 
+    synth_response: pd.DataFrame
+        Response data for each synthetic patient, including sum of longest diameters (SLD) and RECIST response classification with different numbers of target lesions.
+        If save_out is set to True, will be saved out to the data/procdata directory.
+    """
+    logging.basicConfig(filename='pipe.log', level=logging.INFO)
+    logger.info('Retiring the Ruler pipeline started')
+
     dataset_name = Path(radiomic_features_filepath).parent.stem
     # Load radiomics data
     rad_data = pd.read_csv(radiomic_features_filepath)
@@ -55,6 +88,10 @@ def pipe(radiomic_features_filepath: str,
         # Add RECIST category for this number of target lesions
         synth_response[f"RECIST ({num_targets} targets)"] = select_target_response['RECIST (all)']
 
+    # Calculate the classification accuracy for RECIST as a function of the number of target lesions
+    recist_accuracy, pd_sensitivity = recist_metrics_by_target_count(patient_response=synth_response,
+                                                                     max_targets=11)
+
     if save_out:
         out_path = dirs.PROCDATA / dataset_name / f"sim_{num_sim_patients}_pats"
         out_path.mkdir(parents=True, exist_ok=True)
@@ -63,17 +100,12 @@ def pipe(radiomic_features_filepath: str,
         synth_response.to_csv(out_path / f"{dataset_name}_synthetic_patient_response.csv", index_label="index")
 
         plot_path = dirs.RESULTS / dataset_name / f"sim_{num_sim_patients}_pats"
-    else:
-        plot_path = None
-
-    # Calculate the classification accuracy for RECIST as a function of the number of target lesions
-    recist_accuracy, pd_sensitivity = recist_metrics_by_target_count(patient_response=synth_response,
-                                                                     max_targets=11)
-    acc_plot = plot_recist_accuracy(recist_accuracy, plot_path)
-    pd_sense_plot = plot_pd_sensitivity(pd_sensitivity, plot_path)
-    acc_sense_plot = plot_acc_and_sens(recist_accuracy, pd_sensitivity, plot_path)
-    vol_v_diam_plot, vol_var_v_diam_plot = plot_vol_vs_diameter(synth_lesions, plot_path)
+        plot_recist_accuracy(recist_accuracy, plot_path)
+        plot_pd_sensitivity(pd_sensitivity, plot_path)
+        plot_acc_and_sens(recist_accuracy, pd_sensitivity, plot_path)
+        plot_vol_vs_diameter(synth_lesions, plot_path)
     
+    return synth_lesions, synth_response
 
 
 if __name__ == '__main__':
