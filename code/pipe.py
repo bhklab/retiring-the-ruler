@@ -51,10 +51,12 @@ def pipe(radiomic_features_filepath: str,
         Response data for each synthetic patient, including sum of longest diameters (SLD) and RECIST response classification with different numbers of target lesions.
         If save_out is set to True, will be saved out to the data/procdata directory.
     """
-    logging.basicConfig(filename='pipe.log', level=logging.INFO)
-    logger.info('Retiring the Ruler pipeline started')
-
     dataset_name = Path(radiomic_features_filepath).parent.stem
+
+    logging.basicConfig(filename=f'logs/pipe_{dataset_name}.log', level=logging.INFO, format='%(asctime)s %(message)s')
+    logger.info('\n')
+    logger.info(f'Retiring the Ruler pipeline started for {dataset_name}')
+
     # Load radiomics data
     rad_data = pd.read_csv(radiomic_features_filepath)
 
@@ -66,13 +68,15 @@ def pipe(radiomic_features_filepath: str,
 
     lesion_selection_rng = np.random.default_rng(random_seed)
 
+    logger.info('Starting synthetic lesion generation.')
     # Generate lesion measurements for N synthetic patients with 1 to M synthetic lesions based on real lesion data
     synth_lesions = generate_synthetic_patients(num_sim_patients=num_sim_patients,
                                                 base_radiomic_data=rad_data,
                                                 expected_num_lesions=expected_num_lesions,
                                                 location_label=location_label,
                                                 lesion_selection_rng=lesion_selection_rng)
-
+    logger.info('Synthetic lesion generation finished.')
+    logger.info('Performing RECIST assessment of synthetic lesions.')
     # Assess the RECIST response category of each synthetic patient using all lesions
     synth_response = recist_assess(synth_lesions)
 
@@ -88,17 +92,22 @@ def pipe(radiomic_features_filepath: str,
         # Add RECIST category for this number of target lesions
         synth_response[f"RECIST ({num_targets} targets)"] = select_target_response['RECIST (all)']
 
+    logger.info('Finished RECIST assessments.')
+    logger.info('Calculating accuracy and PD sensitivity.')
     # Calculate the classification accuracy for RECIST as a function of the number of target lesions
     recist_accuracy, pd_sensitivity = recist_metrics_by_target_count(patient_response=synth_response,
                                                                      max_targets=11)
+    
 
     if save_out:
+        logger.info('Saving out the synthetic lesion and response data.')
         out_path = dirs.PROCDATA / dataset_name / f"sim_{num_sim_patients}_pats"
         out_path.mkdir(parents=True, exist_ok=True)
 
         synth_lesions.to_csv(out_path / f"{dataset_name}_synthetic_lesions.csv", index_label="index")
         synth_response.to_csv(out_path / f"{dataset_name}_synthetic_patient_response.csv", index_label="index")
 
+        logger.info('Plotting analysis results.')
         plot_path = dirs.RESULTS / dataset_name / f"sim_{num_sim_patients}_pats"
         plot_recist_accuracy(recist_accuracy, plot_path)
         plot_pd_sensitivity(pd_sensitivity, plot_path)
