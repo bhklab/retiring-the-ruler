@@ -68,16 +68,16 @@ def recist_assess(lesion_data:pd.DataFrame,
 
 def select_target_lesions(num_lesions:int,
                           lesion_data:pd.DataFrame,
-                          lesion_selection_rng: np.random.Generator) -> pd.DataFrame:
+                          lesion_selection_rng: np.random.Generator,
+                          parallel: bool = False) -> pd.DataFrame:
     """Randomly select specified number of target lesions from lesion data, ensuring no more than 2 are selected for each location following RECIST specifications.
        
        Returns the selected target lesion rows from lesion data.
        """
     patients = np.unique(lesion_data['patient_id'])
 
-    # ensure that there is not more than 2 target lesions per location
-    target_lesions = []
-    for patient in patients:
+    def selection_process(patient):
+        # ensure that there are not more than 2 target lesions per location
         # get the locations for the patient
         locations = np.unique(lesion_data['location'][lesion_data['patient_id'] == patient])
         selected_lesion_idx = []
@@ -97,12 +97,23 @@ def select_target_lesions(num_lesions:int,
         
         # If there are more selected lesions from this location than the required number of lesions, randomly select from these
         if len(selected_lesion_idx) > num_lesions:
-            target_lesions.extend(lesion_selection_rng.choice(selected_lesion_idx, num_lesions))
+            return lesion_selection_rng.choice(selected_lesion_idx, num_lesions)
         else:
-            target_lesions.extend(selected_lesion_idx)
+            return selected_lesion_idx
     
+    if parallel:
+        target_lesions = Parallel()(
+            delayed(selection_process)(patient=patient)
+            for patient in patients
+        )
+    else:
+        target_lesions = [selection_process(patient=patient) for patient in patients]
+
+    lesion_idxs = [idx for patient in target_lesions for idx in patient]
+
+
     # Select out the rows of the lesion data for the selected target lesions
-    selected_target_lesions = lesion_data.copy().iloc[target_lesions]
+    selected_target_lesions = lesion_data.copy().iloc[lesion_idxs]
     # Sort the selected lesion data by index and return
     return selected_target_lesions.sort_index()
 

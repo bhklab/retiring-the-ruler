@@ -100,7 +100,8 @@ def pipe(radiomic_features_filepath: str,
     for num_targets in tqdm(range(1, 11), desc="RECIST assessment for different target counts"):
         target_lesions = select_target_lesions(num_lesions=num_targets,
                                                lesion_data=synth_lesions,
-                                               lesion_selection_rng=lesion_selection_rng
+                                               lesion_selection_rng=lesion_selection_rng,
+                                               parallel=parallel
                                                )
         # Reassess RECIST categorization with subset of lesions
         select_target_response = recist_assess(target_lesions, parallel=parallel)
