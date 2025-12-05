@@ -109,8 +109,8 @@ def select_target_lesions(num_lesions:int,
     else:
         target_lesions = [selection_process(patient=patient) for patient in patients]
 
+    # Flatten the list of lesion lists for each patient
     lesion_idxs = [idx for patient in target_lesions for idx in patient]
-
 
     # Select out the rows of the lesion data for the selected target lesions
     selected_target_lesions = lesion_data.copy().iloc[lesion_idxs]
