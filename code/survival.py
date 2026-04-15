@@ -1,11 +1,14 @@
+from pathlib import Path
+
+import click
+import matplotlib.pyplot as plt
 import pandas as pd
-from sksurv.nonparametric import kaplan_meier_estimator
 from damply import dirs
 from plot import plot_survival_curve
-from pathlib import Path
-import click
+from sksurv.nonparametric import kaplan_meier_estimator
 
-def calculate_survival(response_df: pd.DataFrame):
+
+def calculate_survival(response_df: pd.DataFrame) -> pd.DataFrame:
     """Calculate survival probabilities and confidence intervals using the Kaplan-Meier estimator for a given response DataFrame."""
     time, survival_prob, conf_int = kaplan_meier_estimator(
         response_df['E_OS'].astype(bool),
@@ -28,13 +31,16 @@ def calculate_survival(response_df: pd.DataFrame):
 @click.option('--response_categories', type=click.STRING, default='PD,SD', help='Comma-separated list of response categories to include in the analysis (e.g., PD,SD)')
 def main(clinical_path: Path | None = None,
          recist_path: Path | None = None,
-         response_categories: list[str] | str = ['PD', 'SD'],):
+         response_categories: list[str] | None = None
+         ) -> plt.Figure:
     """Main function to calculate survival probabilities and plot Kaplan-Meier survival curves for different response categories."""
     if clinical_path is None:
-        raise ValueError("Clinical data could not be loaded. Please check the clinical_path.")
+        msg = "Clinical data could not be loaded. Please check the clinical_path."
+        raise ValueError(msg)
     if recist_path is None:
-        raise ValueError("RECIST data could not be loaded. Please check the recist_path.")
-    
+        msg = "RECIST data could not be loaded. Please check the recist_path."
+        raise ValueError(msg)
+
     if isinstance(response_categories, str):
         response_categories = [cat.strip() for cat in response_categories.split(',')]
 
@@ -46,10 +52,11 @@ def main(clinical_path: Path | None = None,
     earliest_recist_df = recist_df.loc[recist_df.groupby("USUBJID")["Study day of response assessment"].idxmin()]
 
     # Select out only the response categories we want to include in the analysis
-    earliest_recist_df = earliest_recist_df[(earliest_recist_df['RECIST Overall Response Assessment'].isin(response_categories))]
+    if response_categories is not None:
+        earliest_recist_df = earliest_recist_df[(earliest_recist_df['RECIST Overall Response Assessment'].isin(response_categories))]
 
     # Merge recist data with clinical data on patient ID
-    merged_df = pd.merge(earliest_recist_df, clinical_df, left_on="USUBJID", right_on="USUBJID")
+    merged_df = earliest_recist_df.merge(clinical_df, left_on="USUBJID", right_on="USUBJID")
 
     # Calculate the KM survival curve for each response category and store in a dictionary
     recist_survival = {}
