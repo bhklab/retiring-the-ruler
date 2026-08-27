@@ -143,4 +143,30 @@ def plot_vol_vs_diameter(lesion_data: pd.DataFrame,
         save_plot(vol_var_v_diam_fig, vol_var_v_diam_file)
 
     return vol_v_diam_fig, vol_var_v_diam_fig
-    
+
+
+def plot_survival_curve(survival_df: pd.DataFrame,
+                        category_col: str | None = None,
+                        save_path: Path | None = None
+                        ) -> Figure:
+    """Plot a Kaplan-Meier survival curve. Optionally separate into different survival curves by specified category."""
+    fig = plt.figure(figsize=(8, 6))
+
+    if category_col in survival_df.columns:
+        sns.lineplot(data=survival_df, x='time', y='survival_prob', hue=category_col)
+        # Add legend for categories
+        plt.legend(title=category_col, loc='upper center', bbox_to_anchor=(0.5, -0.09), ncol=4)
+    else:
+        sns.lineplot(data=survival_df, x='time', y='survival_prob')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Survival Probability')
+    plt.title('Kaplan-Meier Survival Curve')
+    sns.despine()
+
+    if save_path:
+        cats = "_".join(survival_df[category_col].unique()) if category_col else "overall"
+        save_file = save_path / f"survival_curve_{cats}.png"
+        save_plot(fig, save_file)
+
+    return fig
